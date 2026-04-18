@@ -126,6 +126,7 @@ public:
             if (i != 0) cout << " -> ";
         }
         cout << endl;
+
         foodMenu();
     }
 };
@@ -158,6 +159,7 @@ int main() {
         }
         else if (choice == 3) {
             int src, dest, maxTime, du, dv;
+            int delayChoice;
 
             cout << "Enter source and destination: ";
             cin >> src >> dest;
@@ -165,8 +167,20 @@ int main() {
             cout << "Enter maximum preferred travel time: ";
             cin >> maxTime;
 
-            cout << "Enter delayed route (u v): ";
-            cin >> du >> dv;
+            cout << "Is there any delayed route? (1 = Yes, 0 = No): ";
+            cin >> delayChoice;
+
+            if (delayChoice == 1) {
+                cout << "Enter delayed route (u v): ";
+                cin >> du >> dv;
+
+                cout << "\nFlight delay detected!\n";
+                cout << "Enter NEW preferred maximum travel time: ";
+                cin >> maxTime;
+            } else {
+                du = -1;
+                dv = -1;
+            }
 
             g.dijkstra(src, dest, maxTime, du, dv);
         }
