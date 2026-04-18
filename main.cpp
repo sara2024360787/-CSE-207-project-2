@@ -11,7 +11,6 @@ struct Flight {
     int departureTime;
 };
 
-// ✔ YOUR ORIGINAL FOOD MENU (UNCHANGED)
 void foodMenu() {
     int classChoice;
     cout << "\nSelect Class:\n";
@@ -138,7 +137,7 @@ public:
         }
         cout << endl;
 
-        foodMenu(); // ✔ YOUR FOOD MENU CALLED HERE
+        foodMenu(); 
     }
 };
 
