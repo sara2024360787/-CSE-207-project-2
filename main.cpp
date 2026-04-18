@@ -7,9 +7,11 @@ using namespace std;
 struct Flight {
     int node;
     int cost;
-    int time;
+    int travelTime;
+    int departureTime;
 };
 
+// ✔ YOUR ORIGINAL FOOD MENU (UNCHANGED)
 void foodMenu() {
     int classChoice;
     cout << "\nSelect Class:\n";
@@ -55,9 +57,9 @@ public:
         adj.resize(V);
     }
 
-    void addEdge(int u, int v, int cost, int time) {
-        adj[u].push_back({v, cost, time});
-        adj[v].push_back({u, cost, time});
+    void addEdge(int u, int v, int cost, int travelTime, int departureTime) {
+        adj[u].push_back({v, cost, travelTime, departureTime});
+        adj[v].push_back({u, cost, travelTime, departureTime});
     }
 
     void display() {
@@ -65,24 +67,25 @@ public:
         for (int i = 0; i < V; i++) {
             cout << "Airport " << i << " -> ";
             for (auto x : adj[i]) {
-                cout << "(" << x.node 
-                     << ", cost=" << x.cost 
-                     << ", time=" << x.time << ") ";
+                cout << "(" << x.node
+                     << ", cost=" << x.cost
+                     << ", dep=" << x.departureTime
+                     << ", time=" << x.travelTime << ") ";
             }
             cout << endl;
         }
     }
 
-    void dijkstra(int src, int dest, int maxTime, int du, int dv) {
+    void dijkstra(int src, int dest, int du, int dv, bool delay) {
 
         vector<int> dist(V, INT_MAX);
-        vector<int> timeTaken(V, INT_MAX);
+        vector<int> timeArrive(V, INT_MAX);
         vector<int> parent(V, -1);
 
         priority_queue<pair<int,int>, vector<pair<int,int>>, greater<pair<int,int>>> pq;
 
         dist[src] = 0;
-        timeTaken[src] = 0;
+        timeArrive[src] = 0;
         pq.push({0, src});
 
         while (!pq.empty()) {
@@ -92,15 +95,24 @@ public:
             for (auto x : adj[u]) {
                 int v = x.node;
 
-                if ((u == du && v == dv) || (u == dv && v == du))
+                // delay check
+                if (delay && ((u == du && v == dv) || (u == dv && v == du)))
                     continue;
 
-                int newCost = dist[u] + x.cost;
-                int newTime = timeTaken[u] + x.time;
+                int currentTime = timeArrive[u];
 
-                if (newCost < dist[v] && newTime <= maxTime) {
+                int waitTime;
+                if (x.departureTime >= currentTime)
+                    waitTime = x.departureTime - currentTime;
+                else
+                    waitTime = (24 - currentTime) + x.departureTime;
+
+                int arrivalTime = currentTime + waitTime + x.travelTime;
+                int newCost = dist[u] + x.cost;
+
+                if (newCost < dist[v]) {
                     dist[v] = newCost;
-                    timeTaken[v] = newTime;
+                    timeArrive[v] = arrivalTime;
                     parent[v] = u;
                     pq.push({dist[v], v});
                 }
@@ -108,17 +120,16 @@ public:
         }
 
         if (dist[dest] == INT_MAX) {
-            cout << "No route found within time limit!\n";
+            cout << "No route found!\n";
             return;
         }
 
-        cout << "\nShortest Cost: " << dist[dest] << endl;
-        cout << "Total Time: " << timeTaken[dest] << endl;
+        cout << "\nShortest Cost: " << dist[dest];
+        cout << "\nArrival Time: " << timeArrive[dest] << endl;
 
         vector<int> path;
-        for (int v = dest; v != -1; v = parent[v]) {
+        for (int v = dest; v != -1; v = parent[v])
             path.push_back(v);
-        }
 
         cout << "Route: ";
         for (int i = path.size() - 1; i >= 0; i--) {
@@ -127,7 +138,7 @@ public:
         }
         cout << endl;
 
-        foodMenu();
+        foodMenu(); // ✔ YOUR FOOD MENU CALLED HERE
     }
 };
 
@@ -138,58 +149,41 @@ int main() {
 
     Graph g(V);
 
-    int choice;
     while (true) {
-        cout << "\n--- MENU ---\n";
-        cout << "1. Add Flight\n";
-        cout << "2. Display Route Map\n";
-        cout << "3. Find Route (with delay & food)\n";
-        cout << "4. Exit\n";
-        cout << "Enter choice: ";
-        cin >> choice;
+        cout << "\n1.Add Flight\n2.Display\n3.Find Route\n4.Exit\nChoice: ";
+        int c;
+        cin >> c;
 
-        if (choice == 1) {
-            int u, v, cost, time;
-            cout << "Enter source, destination, cost, time: ";
-            cin >> u >> v >> cost >> time;
-            g.addEdge(u, v, cost, time);
+        if (c == 1) {
+            int u,v,cost,time,dep;
+            cout << "u v cost time dep: ";
+            cin >> u >> v >> cost >> time >> dep;
+            g.addEdge(u,v,cost,time,dep);
         }
-        else if (choice == 2) {
+
+        else if (c == 2) {
             g.display();
         }
-        else if (choice == 3) {
-            int src, dest, maxTime, du, dv;
-            int delayChoice;
 
-            cout << "Enter source and destination: ";
-            cin >> src >> dest;
+        else if (c == 3) {
+            int s,d,du,dv;
+            bool delay;
 
-            cout << "Enter maximum preferred travel time: ";
-            cin >> maxTime;
+            cout << "src dest: ";
+            cin >> s >> d;
 
-            cout << "Is there any delayed route? (1 = Yes, 0 = No): ";
-            cin >> delayChoice;
+            cout << "Delay? (1/0): ";
+            cin >> delay;
 
-            if (delayChoice == 1) {
-                cout << "Enter delayed route (u v): ";
+            if (delay) {
+                cout << "Delayed route u v: ";
                 cin >> du >> dv;
-
-                cout << "\nFlight delay detected!\n";
-                cout << "Enter NEW preferred maximum travel time: ";
-                cin >> maxTime;
-            } else {
-                du = -1;
-                dv = -1;
             }
 
-            g.dijkstra(src, dest, maxTime, du, dv);
+            g.dijkstra(s,d,du,dv,delay);
         }
-        else if (choice == 4) {
-            break;
-        }
-        else {
-            cout << "Invalid choice!\n";
-        }
+
+        else break;
     }
 
     return 0;
